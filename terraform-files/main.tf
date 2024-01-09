@@ -118,7 +118,7 @@ resource "null_resource" "config" {
     host = aws_instance.control_node.public_ip
     type = "ssh"
     user = "ec2-user"
-    private_key = file("~/.ssh/${var.mykey}.pem")
+    private_key = file("${var.mykey}.pem")
     # Do not forget to define your key file path correctly!
   }
 
@@ -134,7 +134,7 @@ resource "null_resource" "config" {
 
   provisioner "file" {
     # Do not forget to define your key file path correctly!
-    source = "~/.ssh/${var.mykey}.pem"
+    source = "${var.mykey}.pem"
     destination = "/home/ec2-user/${var.mykey}.pem"
   }
 
@@ -145,7 +145,13 @@ resource "null_resource" "config" {
       "sudo yum install -y python3-pip",
       "pip3 install --user ansible",
       "pip3 install --user boto3",
-      "chmod 400 ${var.mykey}.pem"
+      "chmod 400 ${var.mykey}.pem",
+      "sudo echo postgresql_server_prip=${aws_instance.nodes[0].private_ip} >> varsip.yaml",
+      "sudo echo nodejs_server_prip=${aws_instance.nodes[1].private_ip} >> varsip.yaml",
+      "sudo echo react_server_prip=${aws_instance.nodes[2].private_ip} >> varsip.yaml",
+      "sudo echo postgresql__pubip=${aws_instance.nodes[0].public_ip} >> varsip.yaml",
+      "sudo echo nodejs__pubip=${aws_instance.nodes[1].public_ip} >> varsip.yaml",
+      "sudo echo react__pubip=${aws_instance.nodes[2].public_ip} >> varsip.yaml",
     ]
   }
 
@@ -157,4 +163,12 @@ output "controlnodeip" {
 
 output "privates" {
   value = aws_instance.control_node.*.private_ip
+}
+
+output "managed-node-public-ips" {
+  value = [for managed-node in aws_instance.nodes : "ssh ec2-user@${managed-node.public_ip}"]
+}
+
+output "managed-nodes-private-ips" {
+  value = aws_instance.nodes.*.private_ip
 }
